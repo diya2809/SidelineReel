@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SidelineReel – Tag Check prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --turf:#1E5B3B; --turf-deep:#123B26; --chalk:#FFFFFF; --paper:#F3F6F2;
+  --ink:#16201A; --muted:#5B6B60; --line:#D5DED7; --flag:#E8A317; --flag-ink:#6B4700;
+  --ok:#1E7A4C; --card:#FFFFFF; --bad:#B3361F;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1712; --card:#18231C; --ink:#E7EEE9; --muted:#9AAEA1; --line:#2A3A30;
+    --turf:#2C7A50; --turf-deep:#0C2417; --flag-ink:#F5C55A; --ok:#4CC28A; --bad:#F07A62;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1712; --card:#18231C; --ink:#E7EEE9; --muted:#9AAEA1; --line:#2A3A30;
+  --turf:#2C7A50; --turf-deep:#0C2417; --flag-ink:#F5C55A; --ok:#4CC28A; --bad:#F07A62;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+.num{font-family:"Barlow Condensed","Arial Narrow",Impact,sans-serif;font-weight:800;letter-spacing:.01em}
+header{background:var(--turf-deep);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header .brand{font-weight:700;font-size:17px}
+header .brand span{opacity:.7;font-weight:400}
+.steps{display:flex;gap:6px}
+.steps button{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.steps button[aria-current="step"]{background:#fff;color:var(--turf-deep);border-color:#fff;font-weight:600}
+main{max-width:760px;margin:0 auto;padding:24px 18px 60px}
+h1{font-size:26px;line-height:1.2;margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 22px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.stats{display:flex;gap:28px;margin-bottom:18px;flex-wrap:wrap}
+.stats div b{display:block;font-size:40px;line-height:1}
+.stats div small{color:var(--muted)}
+.stats .flagged b{color:var(--flag)}
+.row{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.pair{display:flex;align-items:center;gap:6px;font-size:28px;min-width:92px}
+.pair i{font-style:normal;font-family:"Public Sans",sans-serif;font-size:13px;color:var(--muted)}
+.row .why{flex:1;font-size:14px}
+.row .why b{display:block;font-size:15px}
+.pill{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill.wait{background:#FBEFD2;color:#6B4700}
+.pill.done{background:#D8F0E2;color:#145233}
+.btn{display:inline-block;border:0;border-radius:10px;padding:13px 20px;font:inherit;font-weight:600;cursor:pointer;background:var(--turf);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:focus-visible,.pick:focus-visible,.steps button:focus-visible{outline:3px solid var(--flag);outline-offset:2px}
+.note{font-size:13px;color:var(--muted);margin-top:14px}
+/* clip */
+.clip{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/8;background:
+  repeating-linear-gradient(90deg,#2F7A4B 0 60px,#2A6F44 60px 120px);margin-bottom:16px}
+.clip svg{position:absolute;inset:0;width:100%;height:100%}
+.clip .bar{position:absolute;left:0;bottom:0;height:4px;background:#fff;width:0;animation:play 6s linear infinite}
+@keyframes play{to{width:100%}}
+@media (prefers-reduced-motion: reduce){.clip .bar{animation:none;width:40%}}
+.clip .tag{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:4px 9px;border-radius:6px}
+.reason{background:#FBEFD2;color:#5A3C00;border-radius:10px;padding:10px 14px;font-size:14px;margin-bottom:16px}
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pick{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:14px;text-align:left;cursor:pointer;font:inherit;display:flex;gap:12px;align-items:center}
+.pick:hover{border-color:var(--turf)}
+.pick .jersey{width:62px;height:62px;border-radius:12px 12px 8px 8px;background:var(--turf);color:#fff;display:grid;place-items:center;font-size:34px;flex:none}
+.pick b{display:block}
+.pick small{color:var(--muted)}
+.pick .conf{font-size:12px;color:var(--flag-ink);font-weight:600}
+.skip{margin-top:12px;background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:14px;cursor:pointer}
+.progress{font-size:14px;color:var(--muted);margin-bottom:10px}
+/* phone */
+.phone{max-width:320px;margin:0 auto;border:10px solid #1b1b1b;border-radius:34px;overflow:hidden;background:#fff;color:#16201A}
+.phone .ph-top{background:var(--turf-deep);color:#fff;padding:14px 16px;font-size:13px}
+.phone .ph-top b{display:block;font-size:16px}
+.thumb{aspect-ratio:9/12;background:repeating-linear-gradient(90deg,#2F7A4B 0 40px,#2A6F44 40px 80px);position:relative;display:grid;place-items:center}
+.thumb .big{font-size:120px;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.25)}
+.thumb .lbl{position:absolute;bottom:12px;left:12px;right:12px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:8px 10px;font-size:13px}
+.ph-actions{display:flex;gap:8px;padding:12px}
+.ph-actions span{flex:1;text-align:center;padding:10px;border-radius:8px;background:#EEF3EF;font-weight:600;font-size:14px}
+.ph-actions span.share{background:#1E5B3B;color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.log li{margin-bottom:8px;font-size:14px}
+.ok{color:var(--ok);font-weight:600}
+@media (max-width:620px){.picks,.two{grid-template-columns:1fr}.stats div b{font-size:32px}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">SidelineReel <span>Tag check prototype</span></div>
+  <nav class="steps" aria-label="Prototype steps">
+    <button data-go="1">1 Review queue</button>
+    <button data-go="2">2 Confirm player</button>
+    <button data-go="3">3 Reels sent</button>
+  </nav>
+</header>
+
+<main>
+  <!-- STEP 1 -->
+  <section id="s1">
+    <h1>Ridgeline U12 vs Oakmont is ready</h1>
+    <p class="sub">Saturday’s game, coach view. Reels go to families once the clips below are checked.</p>
+    <div class="panel">
+      <div class="stats">
+        <div><b class="num" id="autoCount">41</b><small>clips tagged with high confidence</small></div>
+        <div class="flagged"><b class="num" id="flagCount">3</b><small>clips need you to confirm the player</small></div>
+      </div>
+      <div id="queue"></div>
+    </div>
+    <p style="margin-top:18px"><button class="btn" id="startBtn">Check 3 clips (about 30 seconds)</button></p>
+    <p class="note">Flagged clips are held back from every reel until a coach confirms them. Clips not checked within 24 hours are left out of reels rather than guessed, so the weekly recap still goes out on time.</p>
+  </section>
+
+  <!-- STEP 2 -->
+  <section id="s2" hidden>
+    <div class="progress" id="prog">Clip 1 of 3</div>
+    <h1 id="clipTitle">Who scored this goal?</h1>
+    <p class="sub" id="clipTime">2nd half, 14:22</p>
+    <div class="clip" aria-label="Game clip, jersey number partly hidden">
+      <svg viewBox="0 0 400 200" aria-hidden="true">
+        <line x1="200" y1="0" x2="200" y2="200" stroke="#fff" stroke-opacity=".5" stroke-width="2"/>
+        <circle cx="200" cy="100" r="40" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/>
+        <g transform="translate(150,40)">
+          <circle cx="50" cy="18" r="16" fill="#E9C9A8"/>
+          <rect x="22" y="36" width="56" height="70" rx="10" fill="#C8102E"/>
+          <text id="svgNum" x="50" y="88" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="800" font-size="40" fill="#fff">4</text>
+          <rect id="svgBlur" x="22" y="56" width="22" height="40" fill="#C8102E" opacity=".85"/>
+          <rect x="30" y="106" width="16" height="44" fill="#16201A"/><rect x="54" y="106" width="16" height="44" fill="#16201A"/>
+        </g>
+        <circle cx="270" cy="170" r="10" fill="#fff"/>
+      </svg>
+      <span class="tag">Detected jersey: <span id="detected">#4</span></span>
+      <div class="bar"></div>
+    </div>
+    <div class="reason" id="reason">The left side of the number is hidden by an arm. #4 and #14 are both on your roster, so we’re asking instead of guessing.</div>
+    <div class="picks" id="picks"></div>
+    <button class="skip" id="skipBtn">Neither, leave this clip out of reels</button>
+  </section>
+
+  <!-- STEP 3 -->
+  <section id="s3" hidden>
+    <h1>Reels sent to 16 families</h1>
+    <p class="sub">Every clip is in the right player’s reel. The weekly recap went out with them.</p>
+    <div class="two">
+      <div class="panel">
+        <b>What you confirmed</b>
+        <ul class="log" id="log"></ul>
+        <p class="note">Your answers also teach the tagger which lookalike numbers to watch on this roster.</p>
+        <button class="btn ghost" id="resetBtn">Run the demo again</button>
+      </div>
+      <div>
+        <div class="phone" aria-label="Parent’s phone showing the reel">
+          <div class="ph-top"><b id="phName">Sofia’s highlights</b>Ridgeline U12, this week</div>
+          <div class="thumb"><span class="big num" id="phNum">14</span><span class="lbl" id="phLbl">Goal, 2nd half 14:22</span></div>
+          <div class="ph-actions"><span>Watch</span><span class="share">Share</span></div>
+        </div>
+        <p class="note" style="text-align:center">Parent view: the thumbnail shows their own kid.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const clips=[
+  {title:"Who scored this goal?",time:"2nd half, 14:22",shown:"4",hide:true,
+   reason:"The left side of the number is hidden by an arm. #4 and #14 are both on your roster, so we’re asking instead of guessing.",
+   options:[{n:"4",name:"Maya Chen",conf:"Tagger’s guess, 58%"},{n:"14",name:"Sofia Reyes",conf:"Lookalike on roster"}],answer:null,play:"Goal"},
+  {title:"Who made this save?",time:"1st half, 22:05",shown:"1",hide:true,
+   reason:"Only one digit is visible from this camera angle. #1 and #11 are both on your roster.",
+   options:[{n:"1",name:"Leo Park",conf:"Tagger’s guess, 64%"},{n:"11",name:"Ethan Brooks",conf:"Lookalike on roster"}],answer:null,play:"Save"},
+  {title:"Who took this shot?",time:"2nd half, 03:40",shown:"23",hide:false,
+   reason:"The digits may be read in the wrong order from behind. #23 and #32 are both on your roster.",
+   options:[{n:"23",name:"Ava Okafor",conf:"Tagger’s guess, 71%"},{n:"32",name:"Nora Patel",conf:"Lookalike on roster"}],answer:null,play:"Shot on goal"}
+];
+let idx=0;
+const $=id=>document.getElementById(id);
+
+function go(step){
+  [1,2,3].forEach(n=>$("s"+n).hidden=n!==step);
+  document.querySelectorAll(".steps button").forEach(b=>{
+    b.toggleAttribute("aria-current",+b.dataset.go===step);
+    if(+b.dataset.go===step)b.setAttribute("aria-current","step");
+  });
+  if(step===1)renderQueue();
+  if(step===2)renderClip();
+  if(step===3)renderDone();
+  window.scrollTo(0,0);
+}
+
+function renderQueue(){
+  const left=clips.filter(c=>c.answer===null).length;
+  $("flagCount").textContent=left;
+  $("startBtn").textContent=left?`Check ${left} clip${left>1?"s":""} (about ${left*10} seconds)`:"All clips checked, see sent reels";
+  $("queue").innerHTML=clips.map(c=>{
+    const [a,b]=c.options;
+    const st=c.answer===null?'<span class="pill wait">Needs you</span>':'<span class="pill done">Confirmed</span>';
+    return `<div class="row"><div class="pair num">${a.n}<i>or</i>${b.n}</div><div class="why"><b>${c.play}, ${c.time}</b>${c.reason.split(".")[0]}.</div>${st}</div>`;
+  }).join("");
+}
+
+function renderClip(){
+  const pending=clips.findIndex(c=>c.answer===null);
+  if(pending===-1){go(3);return}
+  idx=pending;const c=clips[idx];
+  $("prog").textContent=`Clip ${idx+1} of ${clips.length}`;
+  $("clipTitle").textContent=c.title;$("clipTime").textContent=c.time;
+  $("reason").textContent=c.reason;$("detected").textContent="#"+c.shown;
+  $("svgNum").textContent=c.shown;$("svgBlur").style.display=c.hide?"":"none";
+  $("picks").innerHTML=c.options.map((o,i)=>`<button class="pick" data-i="${i}"><span class="jersey num">${o.n}</span><span><b>${o.name}</b><small>#${o.n}</small><div class="conf">${o.conf}</div></span></button>`).join("");
+  document.querySelectorAll(".pick").forEach(p=>p.onclick=()=>{c.answer=+p.dataset.i;renderClip()});
+}
+
+function renderDone(){
+  const done=clips.filter(c=>c.answer!==null);
+  if(done.length<clips.length){go(clips.some(c=>c.answer===null)&&done.length===0?1:2);return}
+  $("log").innerHTML=clips.map(c=>c.answer===-1
+    ?`<li>${c.play}, ${c.time}: left out of reels</li>`
+    :`<li>${c.play}, ${c.time}: <span class="ok">#${c.options[c.answer].n} ${c.options[c.answer].name}</span></li>`).join("");
+  const first=clips[0];
+  const pick=first.answer>=0?first.options[first.answer]:clips.map(c=>c.answer>=0?c.options[c.answer]:null).find(Boolean);
+  if(pick){
+    $("phName").textContent=pick.name.split(" ")[0]+"’s highlights";
+    $("phNum").textContent=pick.n;
+    const src=clips.find(c=>c.answer>=0&&c.options[c.answer]===pick);
+    $("phLbl").textContent=`${src.play}, ${src.time}`;
+  }
+}
+
+$("startBtn").onclick=()=>go(clips.some(c=>c.answer===null)?2:3);
+$("skipBtn").onclick=()=>{clips[idx].answer=-1;renderClip()};
+$("resetBtn").onclick=()=>{clips.forEach(c=>c.answer=null);go(1)};
+document.querySelectorAll(".steps button").forEach(b=>b.onclick=()=>{
+  const s=+b.dataset.go;
+  if(s===3&&clips.some(c=>c.answer===null)){go(clips.every(c=>c.answer===null)?1:2);return}
+  go(s);
+});
+go(1);
+</script>
+</body>
+</html>
